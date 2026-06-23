@@ -107,6 +107,9 @@ func executeDownload(c *botmodule.ExecuteCtx) botmodule.Result {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "yt-dlp",
 		"--no-warnings", "--no-playlist", "--quiet",
+		// YouTube datacenter IP'larni "Sign in to confirm you're not a bot" bilan
+		// bloklaydi; android client cookie'siz ham odatda o'tadi (web fallback).
+		"--extractor-args", "youtube:player_client=android,web",
 		"-f", ytFormat,
 		"--print", "%(title)s",
 		"--print", "%(duration)s",

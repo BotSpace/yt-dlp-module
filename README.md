@@ -55,3 +55,7 @@ Xabar kelganda (trigger)
 - Telegram URL orqali **~20MB** gacha yuboradi; kattaroq fayl uchun modul faylni
   o'zi yuklab olib serve qilishi kerak (keyingi bosqich).
 - YouTube ba'zi videolarga login/yosh-cheklov qo'yadi — bunda `error` chiqadi.
+- **Bot-tekshiruvi:** YouTube datacenter IP'larni "Sign in to confirm you're not
+  a bot" bilan bloklaydi. Modul `player_client=android,web` bilan buni odatda
+  chetlab o'tadi. Agar baribir bloklasa — cookie kerak: `yt-dlp --cookies` yoki
+  `--cookies-from-browser`. Buni qo'shish keyingi bosqich (credential orqali).

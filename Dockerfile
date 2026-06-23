@@ -20,8 +20,11 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 COPY --from=builder /module ./module
 
-# yt-dlp (community repo) + ffmpeg + ca-certs. yt-dlp python3'ga bog'liq.
-RUN apk --no-cache add ca-certificates yt-dlp ffmpeg
+# ffmpeg + ca-certs apk'dan; yt-dlp esa pip orqali ENG SO'NGGI versiya
+# (alpine paketi tez eskiradi — YouTube ekstraksiyasi eski yt-dlp'da buziladi).
+# yt-dlp sof python — musl/alpine'da binary muammosiz ishlaydi.
+RUN apk --no-cache add ca-certificates ffmpeg python3 py3-pip \
+    && pip3 install --no-cache-dir --break-system-packages -U yt-dlp
 
 USER appuser
 
