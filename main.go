@@ -197,8 +197,7 @@ func errResult(msg string) botmodule.Result {
 			"yt_file":  "",
 			"yt_error": msg,
 		},
-		ExitOutput: "error",
-		Error:      msg, // UI error list + alert'da ko'rsatiladi
+		ExitOutput: "error", // faqat error edge'dan chiqadi — node qizil/yiqilmaydi (Error bermaymiz)
 	}
 }
 
