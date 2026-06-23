@@ -16,7 +16,9 @@ package main
 
 import (
 	"context"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -82,7 +84,7 @@ func main() {
 			{Name: "success", Label: "Topildi", Variant: "success"},
 			{Name: "error", Label: "Xato", Variant: "danger"},
 		},
-		ProducesState: []string{"yt_url", "yt_title", "yt_duration", "yt_thumbnail", "yt_error"},
+		ProducesState: []string{"yt_file", "yt_title", "yt_duration", "yt_thumbnail", "yt_error"},
 		Execute:       executeDownload,
 	})
 
@@ -101,26 +103,37 @@ func executeDownload(c *botmodule.ExecuteCtx) botmodule.Result {
 		ytFormat = formatMap["best"]
 	}
 
-	// Bitta yt-dlp chaqiruvi: tanlangan format uchun metadata + to'g'ridan URL.
-	// --print har biri alohida qatorda chiqadi (tartib saqlanadi).
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	// Faylni vaqtinchalik katalogga YUKLAB OLAMIZ va platformaga UPLOAD qilamiz.
+	// Google to'g'ridan media URL'ni Telegram serveridan bloklaydi — shu sabab
+	// URL emas, faylning o'zini (UUID) berish kerak.
+	dir, err := os.MkdirTemp("", "yt-*")
+	if err != nil {
+		return errResult("temp katalog yaratilmadi: " + err.Error())
+	}
+	defer os.RemoveAll(dir)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
+	// Bitta chaqiruv: yuklab oladi + metadata va yakuniy fayl yo'lini chop etadi.
+	// --no-simulate kerak — aks holda --print faqat simulyatsiya qiladi (yuklamaydi).
+	// --print tartibi saqlanadi; after_move:filepath yuklab bo'lgach oxirgi qatorda.
 	cmd := exec.CommandContext(ctx, "yt-dlp",
-		"--no-warnings", "--no-playlist", "--quiet",
+		"--no-warnings", "--no-playlist", "--quiet", "--no-simulate",
 		// YouTube datacenter IP'larni "Sign in to confirm you're not a bot" bilan
 		// bloklaydi; android client cookie'siz ham odatda o'tadi (web fallback).
 		"--extractor-args", "youtube:player_client=android,web",
 		"-f", ytFormat,
+		"-o", filepath.Join(dir, "m.%(ext)s"),
 		"--print", "%(title)s",
 		"--print", "%(duration)s",
 		"--print", "%(thumbnail)s",
-		"--print", "%(urls)s",
+		"--print", "after_move:filepath",
 		url,
 	)
 	out, err := cmd.Output()
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			return errResult("yt-dlp vaqt tugadi (90s)")
+			return errResult("yt-dlp vaqt tugadi (180s)")
 		}
 		msg := strings.TrimSpace(string(stderr(err)))
 		if msg == "" {
@@ -131,25 +144,28 @@ func executeDownload(c *botmodule.ExecuteCtx) botmodule.Result {
 
 	lines := strings.Split(strings.TrimRight(string(out), "\n"), "\n")
 	if len(lines) < 4 {
-		return errResult("yt-dlp javobi tushunarsiz (format topilmadi)")
+		return errResult("yt-dlp javobi tushunarsiz")
 	}
 	title := lines[0]
 	durationSec, _ := strconv.Atoi(strings.TrimSpace(lines[1]))
 	thumbnail := lines[2]
-	mediaURL := strings.TrimSpace(lines[3])
+	path := strings.TrimSpace(lines[len(lines)-1]) // after_move:filepath — oxirgi qator
 
-	// %(urls)s bir nechta qator bo'lishi mumkin (video+audio alohida bo'lsa).
-	// Progressive format tanlaganmiz — birinchi (yagona) URL yetarli.
-	if i := strings.IndexByte(mediaURL, '\n'); i >= 0 {
-		mediaURL = mediaURL[:i]
+	// ponytail: butun faylni xotiraga o'qiymiz; juda katta fayllar uchun stream
+	// kerak bo'lsa SDK'ga streaming upload qo'shilsin.
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return errResult("yuklangan fayl o'qilmadi: " + err.Error())
 	}
-	if mediaURL == "" {
-		return errResult("media URL topilmadi")
+
+	uuid, err := c.UploadFile(filepath.Base(path), content)
+	if err != nil {
+		return errResult("fayl upload bo'lmadi: " + err.Error())
 	}
 
 	return botmodule.Result{
 		ContextUpdates: map[string]any{
-			"yt_url":       mediaURL,
+			"yt_file":      uuid, // Send* node shu UUID bilan yuboradi
 			"yt_title":     title,
 			"yt_duration":  durationSec,
 			"yt_thumbnail": thumbnail,
@@ -178,7 +194,7 @@ func stderr(err error) []byte {
 func errResult(msg string) botmodule.Result {
 	return botmodule.Result{
 		ContextUpdates: map[string]any{
-			"yt_url":   "",
+			"yt_file":  "",
 			"yt_error": msg,
 		},
 		ExitOutput: "error",
@@ -195,8 +211,11 @@ func truncate(s string, n int) string {
 
 const docs = `# YouTube
 
-YouTube havoladan video yoki audio'ning to'g'ridan-to'g'ri media URL'ini va
-metadata'sini ([yt-dlp](https://github.com/yt-dlp/yt-dlp) orqali) oladi.
+YouTube havoladan video yoki audio'ni ([yt-dlp](https://github.com/yt-dlp/yt-dlp)
+orqali) YUKLAB OLADI, platformaga saqlaydi va fayl UUID'sini qaytaradi. Send*
+node shu UUID bilan yuboradi.
+
+> To'g'ridan media URL ishlatilmaydi — Google uni Telegram serveridan bloklaydi.
 
 ## Node turi
 
@@ -209,7 +228,7 @@ metadata'sini ([yt-dlp](https://github.com/yt-dlp/yt-dlp) orqali) oladi.
 
 **Chiqish state'lari:**
 
-- ` + "`yt_url`" + ` — to'g'ridan media URL (Telegram URL orqali yuboradi)
+- ` + "`yt_file`" + ` — saqlangan fayl UUID'i (Send* node ishlatadi)
 - ` + "`yt_title`" + ` — video sarlavhasi
 - ` + "`yt_duration`" + ` — davomiylik (soniya)
 - ` + "`yt_thumbnail`" + ` — muqova rasm URL'i
@@ -222,12 +241,11 @@ metadata'sini ([yt-dlp](https://github.com/yt-dlp/yt-dlp) orqali) oladi.
 ` + "```" + `
 Xabar kelganda (trigger)
   → YouTube yuklab olish (url: {{message.text}}, format: 360)
-  → Video yuborish (url: {{yt_url}}, caption: {{yt_title}})
+  → Video yuborish (fayl: {{yt_file}}, caption: {{yt_title}})
 ` + "```" + `
 
 ## Cheklovlar
 
-Faqat progressive (yagona oqim) URL qaytariladi — fayl hostlanmaydi. Telegram
-URL orqali ~20MB gacha yuboradi; kattaroq fayllar uchun modul faylni yuklab
-olib o'zi serve qilishi kerak (keyingi bosqich).
+Video amalda ~360p progressive bilan cheklanadi (yagona oqim). Butun fayl
+xotiraga o'qiladi — juda katta fayllar uchun streaming kerak bo'lishi mumkin.
 `

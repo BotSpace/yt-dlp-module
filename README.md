@@ -2,10 +2,12 @@
 
 Botmother tashqi moduli — YouTube'dan video/audio yuklab olish.
 
-`youtube.Download` node YouTube havoladan to'g'ridan-to'g'ri media URL va
-metadata (sarlavha, davomiylik, muqova) oladi. Ichida [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-ishlaydi. Fayl hostlanmaydi — progressive (yagona oqim) URL qaytariladi va
-Telegram uni URL orqali bevosita yuboradi.
+`youtube.Download` node YouTube havoladan video/audio'ni [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+bilan **yuklab oladi**, platformaga saqlaydi (`c.UploadFile`) va fayl **UUID**'sini
+qaytaradi. Send* node shu UUID bilan yuboradi.
+
+> Nega URL emas? Google to'g'ridan media URL'ni Telegram serveridan bloklaydi —
+> shuning uchun faylning o'zi yuklanadi.
 
 ## Lokal test
 
@@ -38,7 +40,7 @@ docker run -p 8100:8100 youtube-module
 | **url** | YouTube havola (`{{message.text}}` yoki literal) |
 | **format** | best / 720p / 360p / audio (m4a) |
 
-**Chiqish state'lari:** `yt_url`, `yt_title`, `yt_duration`, `yt_thumbnail`, `yt_error`
+**Chiqish state'lari:** `yt_file` (UUID), `yt_title`, `yt_duration`, `yt_thumbnail`, `yt_error`
 **Chiqish edge'lari:** `success` / `error`
 
 ## Misol flow
@@ -46,14 +48,13 @@ docker run -p 8100:8100 youtube-module
 ```
 Xabar kelganda (trigger)
   → YouTube yuklab olish (url: {{message.text}}, format: 360)
-  → Video yuborish (url: {{yt_url}}, caption: {{yt_title}})
+  → Video yuborish (fayl: {{yt_file}}, caption: {{yt_title}})
 ```
 
 ## Cheklovlar
 
-- Faqat **progressive** (video+audio yagona oqim) URL — host/merge yo'q.
-- Telegram URL orqali **~20MB** gacha yuboradi; kattaroq fayl uchun modul faylni
-  o'zi yuklab olib serve qilishi kerak (keyingi bosqich).
+- Video amalda **~360p** progressive bilan cheklanadi (yagona oqim).
+- Butun fayl xotiraga o'qiladi — juda katta fayllar uchun streaming kerak bo'lishi mumkin.
 - YouTube ba'zi videolarga login/yosh-cheklov qo'yadi — bunda `error` chiqadi.
 - **Bot-tekshiruvi:** YouTube datacenter IP'larni "Sign in to confirm you're not
   a bot" bilan bloklaydi. Modul `player_client=android,web` bilan buni odatda
