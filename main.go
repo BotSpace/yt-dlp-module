@@ -38,7 +38,7 @@ var formatMap = map[string]string{
 	"best":  "b[vcodec!=none][acodec!=none]",
 	"720":   "b[height<=720][vcodec!=none][acodec!=none]/b[vcodec!=none][acodec!=none]",
 	"360":   "b[height<=360][vcodec!=none][acodec!=none]/b[vcodec!=none][acodec!=none]",
-	"audio": "ba[ext=m4a]/ba",
+	"audio": "ba[ext=m4a]/ba/b[acodec!=none]", // android client sof audio bermasa progressive (audioli) ga tushadi
 }
 
 func main() {
