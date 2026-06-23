@@ -1,0 +1,5 @@
+*.exe
+/module-template-go
+bin/
+.DS_Store
+youtube-module

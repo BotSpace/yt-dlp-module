@@ -1,0 +1,28 @@
+apiVersion: botmother.module/v1
+
+module:
+  id: youtube
+  name: YouTube
+  version: 0.1.0
+  description: YouTube havoladan video/audio media URL va metadata oladi (yt-dlp).
+  author: yourname
+  icon: globe
+
+source:
+  github: https://github.com/BotSpace/yt-dlp-module
+  # endpoint: https://my-server.com
+
+runtime:
+  dockerfile: Dockerfile
+  port: 8100
+  healthcheck: /health
+
+contract:
+  jsonrpc: "2.0"
+  endpoint: /rpc
+  methods: [describe, node.execute, trigger.match, docs]
+
+provides:
+  nodes:
+    - type: youtube.Download
+      trigger: false
