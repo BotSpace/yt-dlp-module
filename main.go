@@ -28,11 +28,17 @@ const moduleID = "youtube"
 
 // yt-dlp format selektorlari — select field'dagi value → yt-dlp -f argumenti.
 // Hammasi progressive (yagona oqim) yoki audio-only: URL orqali to'g'ridan yuboriladi.
+//
+// MUHIM: YouTube 360p'dan yuqorida progressive oqim bermaydi (yuqorisi DASH —
+// alohida video/audio). Shuning uchun har bir selektor balandlik bo'yicha
+// progressive'ni qidiradi, topmasa eng yaxshi mavjud progressive'ga TUSHADI
+// (oxirgi fallback `b[vcodec!=none][acodec!=none]` ~doim itag 18 = 360p mp4).
+// Ya'ni so'ralgan sifat "best-effort" — error o'rniga eng yaqin progressive.
 var formatMap = map[string]string{
-	"best":  "best[ext=mp4][vcodec!=none][acodec!=none]/best[vcodec!=none][acodec!=none]",
-	"720":   "best[ext=mp4][height<=720][vcodec!=none][acodec!=none]/best[height<=720][vcodec!=none][acodec!=none]",
-	"360":   "best[ext=mp4][height<=360][vcodec!=none][acodec!=none]/best[height<=360][vcodec!=none][acodec!=none]",
-	"audio": "bestaudio[ext=m4a]/bestaudio",
+	"best":  "b[vcodec!=none][acodec!=none]",
+	"720":   "b[height<=720][vcodec!=none][acodec!=none]/b[vcodec!=none][acodec!=none]",
+	"360":   "b[height<=360][vcodec!=none][acodec!=none]/b[vcodec!=none][acodec!=none]",
+	"audio": "ba[ext=m4a]/ba",
 }
 
 func main() {
