@@ -2,4 +2,4 @@
 /module-template-go
 bin/
 .DS_Store
-youtube-module
+yt-dlp-module
