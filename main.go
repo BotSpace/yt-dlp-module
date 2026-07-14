@@ -45,7 +45,7 @@ var formatMap = map[string]string{
 
 func main() {
 	m := botmodule.New(moduleID, "YouTube")
-	m.Version = "0.1.0"
+	m.Version = "0.1.1"
 	m.Docs = docs
 
 	m.AddNode(botmodule.Node{
