@@ -51,7 +51,7 @@ func main() {
 	m.AddNode(botmodule.Node{
 		Type:        "youtube.Download",
 		Title:       "YouTube yuklab olish",
-		Description: "YouTube havoladan media URL va metadata oladi (yt-dlp)",
+		Description: "YouTube videoni yt-dlp bilan YUKLAB OLADI, platformaga saqlaydi va fayl UUID'ini yt_file ga qaytaradi (URL EMAS). Yuborish: SendVideoNode videoSourceType=file_id + videoFileId={{yt_file}} (SendFileNode ham bo'ladi). Boshqa state: yt_title, yt_duration, yt_thumbnail, yt_error. Shoxlar: success/error.",
 		Category:    "integrations",
 		Icon:        "globe",
 		Color:       "integration-sky",
