@@ -3,8 +3,8 @@ apiVersion: botmother.module/v1
 module:
   id: youtube
   name: YouTube
-  version: 0.1.0
-  description: YouTube havoladan video/audio media URL va metadata oladi (yt-dlp).
+  version: 0.1.1
+  description: YouTube video/audio'ni yt-dlp bilan yuklab platformaga saqlaydi va fayl UUID'ini (yt_file) qaytaradi. Send*Node file_id bilan yuboradi.
   author: yourname
   icon: globe
 
